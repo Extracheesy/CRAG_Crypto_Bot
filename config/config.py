@@ -48,8 +48,7 @@ datapath = '.\datas\orcl-1995-2014.txt'
 
 COLUMNS_TRADES =  ['id', 'exchager', 'pair', 'time', 'init_value', 'current_value', 'profit_loss', 'drawdown', 'commission']
 COLUMNS_RECORDS = ['id', 'exchager', 'pair', 'buy_time', 'buy_value', 'sell_time','sell_value', 'profit_loss', 'drawdown', 'commission']
-
-MULTITHREADING = True
+COLUMNS_BUY_SELL = ['pair', 'ranking','score', '24h', '1h', 'buy', 'sell', 'neutral']
 MULTITHREADING_POOL = "./POOL/"
-MULTITHREADING_NB_SPLIT_DF = 10
-MULTITHREADING_NUM_THREADS = 10
+
+BUYING_SCORE_THRESHOLD = 0

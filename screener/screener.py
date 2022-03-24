@@ -83,6 +83,41 @@ def get_tradingview_recommendation(df, interval):
     df.reset_index(inplace=True, drop=True)
     return df
 
+def get_crypto_score(symbol, exchange, intervals):
+    buy = 0
+    sell = 0
+    neutral = 0
+    symbol = symbol.replace("/", "")
+    for interval in intervals:
+        data_handler = TA_Handler(
+            symbol=symbol,
+            screener=config.SCREENER_TYPE,
+            exchange=exchange,
+            interval=interval,
+        )
+        try:
+            tradingview_summary = data_handler.get_analysis().summary
+            buy =  buy + tradingview_summary['BUY']
+            sell = sell + tradingview_summary['SELL']
+            neutral = neutral + tradingview_summary['NEUTRAL']
+        except:
+            buy = buy
+            sell = sell
+            neutral = neutral
+
+    return buy, sell, neutral
+
+def get_actual_trend(symbol, markets):
+    change24 = float(markets[symbol]['info']['change24h']) * 100
+    change1h = float(markets[symbol]['info']['change1h']) * 100
+
+    return round(change24,0), round(change1h,0)
+
+
+
+
+
+
 def get_exchange():
     if config.EXCHANGE == config.EXCHANGE_FTX:
         exchange = ccxt.ftx()
@@ -118,21 +153,9 @@ def get_tradingview_recommendation_list(list_crypto_symbols, filter):
     for interval in config.INTERVAL:
         df_symbol = get_tradingview_recommendation(df_symbol, interval)
 
-    if config.MULTITHREADING == False:
-        df_symbol.to_csv('screener_all.csv')
-
-    RECOMMENDATION_ALL = ["STRONG_BUY", "BUY", "NEUTRAL", "STRONG_SELL", "SELL"]
-    df_symbol = filter_df_level(df_symbol, filter, RECOMMENDATION_ALL)
-
-    if config.MULTITHREADING == False:
-        df_symbol.to_csv('screener_filtered.csv')
+    df_symbol = filter_df_level(df_symbol, filter, config.RECOMMENDATION_ALL.copy())
 
     list_crypto_symbols = df_symbol['symbol'].to_list()
-
-    if config.MULTITHREADING == False:
-        print("tradingview recommendation: ", config.FILTER)
-        print("nb symbols:", len(list_crypto_symbols))
-        print(list_crypto_symbols)
 
     return list_crypto_symbols
 

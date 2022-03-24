@@ -27,14 +27,17 @@ class MyExchanger:
         self.df_trades = pd.DataFrame(columns=config.COLUMNS_TRADES)
         self.df_trades_records = pd.DataFrame(columns=config.COLUMNS_RECORDS)
         self.lst_crypto_to_buy = []
+        self.df_crypto_to_buy = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
         self.lst_crypto_to_sell = []
+        self.df_crypto_to_sell = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
         self.lst_crypto_in_portfolio = []
         self.multithreading = True
-        self.multithreading_nb_split = 10
+        self.multithreading_nb_split = 20
 
     def next_step(self):
         if self.position == False:
             self.update_lst_crypto_for_buying()
+            self.rank_list_of_crypto_to_buy()
             self.buy_list_of_pairs()
         else:
             self.sell_listof_pairs()
@@ -100,5 +103,29 @@ class MyExchanger:
         print('duration: ', duration_time)
 
         self.lst_crypto_to_buy = list_reinforced
+
+    def rank_list_of_crypto_to_buy(self):
+        self.df_crypto_to_buy['pair'] = self.lst_crypto_to_buy
+        self.df_crypto_to_buy = self.df_crypto_to_buy.set_index('pair', drop=False)
+
+        for crypto in self.lst_crypto_to_buy:
+            self.df_crypto_to_buy['buy'][crypto], self.df_crypto_to_buy['sell'][crypto], self.df_crypto_to_buy['neutral'][crypto] = screener.get_crypto_score(crypto, self.exchanger_name, self.intervals)
+            self.df_crypto_to_buy['24h'][crypto], self.df_crypto_to_buy['1h'][crypto] = screener.get_actual_trend(crypto, self.markets)
+        # Compute a score based on TDView and 24h and 1h trends
+        self.df_crypto_to_buy['score'] = self.df_crypto_to_buy['buy'] + self.df_crypto_to_buy['24h'] + self.df_crypto_to_buy['1h'] - 2 * self.df_crypto_to_buy['sell'] - self.df_crypto_to_buy['neutral']
+        self.df_crypto_to_buy.sort_values(by=['score'], ascending=True, inplace=True)
+        self.df_crypto_to_buy.reset_index(inplace=True, drop=True)
+        self.df_crypto_to_buy['ranking'] = self.df_crypto_to_buy.index.tolist()
+        self.df_crypto_to_buy.sort_values(by=['ranking'], ascending=False, inplace=True)
+        self.df_crypto_to_buy.reset_index(inplace=True, drop=True)
+
+        # Get rid of lower score
+        self.df_crypto_to_buy.drop(self.df_crypto_to_buy[self.df_crypto_to_buy.score <= config.BUYING_SCORE_THRESHOLD].index, inplace=True)
+
+        self.lst_crypto_to_buy = self.df_crypto_to_buy['pair'].tolist()
+
+
+
+
 
 
