@@ -47,8 +47,9 @@ VOLUME_FILTERED_BY_INFO = True
 datapath = '.\datas\orcl-1995-2014.txt'
 
 COLUMNS_TRADES =  ['id', 'exchager', 'pair', 'time', 'init_value', 'current_value', 'profit_loss', 'drawdown', 'commission']
-COLUMNS_RECORDS = ['id', 'exchager', 'pair', 'buy_time', 'buy_value', 'sell_time','sell_value', 'profit_loss', 'drawdown', 'commission']
+COLUMNS_TRADES_RECORDS = ['id', 'exchager', 'pair', 'buy_time', 'buy_value', 'sell_time','sell_value', 'profit_loss', 'drawdown', 'commission']
 COLUMNS_BUY_SELL = ['pair', 'ranking','score', '24h', '1h', 'buy', 'sell', 'neutral']
+COLUMNS_TRAKING = ['date', 'cash', 'portfolio_value', 'portfolio_size', 'positive_trades', 'negatives_trades']
 MULTITHREADING_POOL = "./POOL/"
 
 BUYING_SCORE_THRESHOLD = 0

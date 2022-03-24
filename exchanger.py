@@ -25,7 +25,8 @@ class MyExchanger:
         self.nb_trades = 0
         self.commissions = 0
         self.df_trades = pd.DataFrame(columns=config.COLUMNS_TRADES)
-        self.df_trades_records = pd.DataFrame(columns=config.COLUMNS_RECORDS)
+        self.df_trades_records = pd.DataFrame(columns=config.COLUMNS_TRADES_RECORDS)
+        self.df_tracking = pd.DataFrame(columns=config.COLUMNS_TRAKING)
         self.lst_crypto_to_buy = []
         self.df_crypto_to_buy = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
         self.lst_crypto_to_sell = []
@@ -40,9 +41,12 @@ class MyExchanger:
             self.rank_list_of_crypto_to_buy()
             self.buy_list_of_pairs()
         else:
+            self.update_my_positions()
             self.sell_listof_pairs()
             self.update_lst_crypto_for_buying()
             self.buy_list_of_pairs()
+
+        self.set_tracking_records()
 
     def buy_list_of_pairs(self):
         return
@@ -57,6 +61,12 @@ class MyExchanger:
         return
 
     def sizer(self):
+        return
+
+    def update_my_positions(self):
+        return
+
+    def set_tracking_records(self):
         return
 
     def get_tradingview_recommendation_list_multi(self, list_crypto_symbols):
