@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     Crag = MyExchanger('ftx', 10000, config.FILTER_BUY, config.INTERVAL)
     Crag.next_step()
-
+    Crag.next_step()
     print_hi('PyCharm')
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

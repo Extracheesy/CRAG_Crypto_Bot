@@ -48,11 +48,10 @@ class MyExchanger:
             self.buy_list_of_pairs()
         else:
             self.update_my_positions()
-            self.sell_listof_pairs()
+            self.sell_list_of_pairs()
             self.update_lst_crypto_for_buying()
+            self.rank_list_of_crypto_to_buy()
             self.buy_list_of_pairs()
-
-        self.set_tracking_records()
 
     def buy_list_of_pairs(self):
         self.trade_time = datetime.now()
@@ -92,8 +91,10 @@ class MyExchanger:
     def buy_pair(self):
         return
 
-    def sell_listof_pairs(self):
-        return
+    def sell_list_of_pairs(self):
+        self.trade_time = datetime.now()
+        for symbol in self.lst_crypto_to_buy:
+            list_raw_trade = []
 
     def sell_pair(self):
         return
@@ -102,9 +103,31 @@ class MyExchanger:
         return
 
     def update_my_positions(self):
-        return
+        self.update_get_profit_stop_lost()
+        self.update_low_ranking()
 
-    def set_tracking_records(self):
+    def update_get_profit_stop_lost(self):
+        self.exchange = screener.get_exchange()
+        self.markets = self.exchange.load_markets()
+
+        list_ids = self.df_trades['id'].to_list()
+        self.df_trades = self.df_trades.set_index('id', drop=False)
+        for id in list_ids:
+            symbol = self.df_trades.loc[id, 'pair']
+            gross_price = self.df_trades['gross_price'][id]
+            init_price = self.df_trades['init_price'][id]
+            trade_size = self.df_trades['trade_size'][id]
+            actual_price = self.get_crypto_price(symbol)
+            new_value = trade_size * actual_price
+            roi = new_value - gross_price
+            if roi >= 0:
+                if roi / gross_price * 100 >= config.GET_PROFIT:
+                    self.lst_crypto_to_sell.append(symbol)
+            else:
+                if roi / gross_price * 100 <= config.STOP_LOSS:
+                    self.lst_crypto_to_sell.append(symbol)
+
+    def update_low_ranking(self):
         return
 
     def get_tradingview_recommendation_list_multi(self, list_crypto_symbols):

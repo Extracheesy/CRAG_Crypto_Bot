@@ -114,10 +114,6 @@ def get_actual_trend(symbol, markets):
     return round(change24,0), round(change1h,0)
 
 
-
-
-
-
 def get_exchange():
     if config.EXCHANGE == config.EXCHANGE_FTX:
         exchange = ccxt.ftx()
