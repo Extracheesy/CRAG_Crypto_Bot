@@ -46,10 +46,15 @@ VOLUME_FILTERED_BY_INFO = True
 
 datapath = '.\datas\orcl-1995-2014.txt'
 
-COLUMNS_TRADES =  ['id', 'exchager', 'pair', 'time', 'init_value', 'current_value', 'profit_loss', 'drawdown', 'commission']
-COLUMNS_TRADES_RECORDS = ['id', 'exchager', 'pair', 'buy_time', 'buy_value', 'sell_time','sell_value', 'profit_loss', 'drawdown', 'commission']
+COLUMNS_TRADES = ['id', 'time', 'pair', 'init_price', 'trade_size', 'net_price', 'commission', 'gross_price', 'current_u_value', 'current_trade_val', 'profit_loss']
+COLUMNS_TRADES_RECORDS = ['id', 'time', 'cash', 'positive_trades', 'negative_trades', 'open_trades', 'total_nb_trades', 'portfolio_value']
+
 COLUMNS_BUY_SELL = ['pair', 'ranking','score', '24h', '1h', 'buy', 'sell', 'neutral']
-COLUMNS_TRAKING = ['date', 'cash', 'portfolio_value', 'portfolio_size', 'positive_trades', 'negatives_trades']
+
+COLUMNS_POSITION_RECORDS = ['id', 'time', 'cash', 'positive_trades', 'negative_trades', 'open_trades', 'total_nb_trades', 'portfolio_value']
+
 MULTITHREADING_POOL = "./POOL/"
 
 BUYING_SCORE_THRESHOLD = 0
+INIT_SYMBOL ='BTC/USD'
+TRADE_SIZE = 100  # $100

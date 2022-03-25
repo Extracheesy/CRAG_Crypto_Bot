@@ -1,6 +1,7 @@
 from datetime import datetime
 import pandas as pd
 import uuid
+import ccxt
 import config
 import screener
 import tools
@@ -11,22 +12,27 @@ class MyExchanger:
 
     def __init__(self, exchange, cash, filter_buy, intervals):
         self.start_time = datetime.now()
+        self.trade_time = datetime.now()
         self.exchanger_name = exchange
         self.exchange = screener.get_exchange()
         self.markets = self.exchange.load_markets()
         self.filter = filter_buy
         self.intervals = intervals
+
         self.position = False
         self.cash = cash
-        self.cash_empty = False
         self.portfolio_value = 0
-        self.portfolio_size = 0
-        self.portfolio_full = False
+        self.positive_trades = 0
+        self.negative_trades = 0
+        self.open_trades = 0
         self.nb_trades = 0
-        self.commissions = 0
+        self.nb_records = 0
+
+        self.commission = self.markets[config.INIT_SYMBOL]['taker']
         self.df_trades = pd.DataFrame(columns=config.COLUMNS_TRADES)
+        self.df_position_records = pd.DataFrame(columns=config.COLUMNS_POSITION_RECORDS)
+
         self.df_trades_records = pd.DataFrame(columns=config.COLUMNS_TRADES_RECORDS)
-        self.df_tracking = pd.DataFrame(columns=config.COLUMNS_TRAKING)
         self.lst_crypto_to_buy = []
         self.df_crypto_to_buy = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
         self.lst_crypto_to_sell = []
@@ -49,7 +55,39 @@ class MyExchanger:
         self.set_tracking_records()
 
     def buy_list_of_pairs(self):
-        return
+        self.trade_time = datetime.now()
+        for symbol in self.lst_crypto_to_buy:
+            list_raw_trade = []
+
+            list_raw_trade.append(self.nb_trades)                   # id
+            self.nb_trades = self.nb_trades+1
+            list_raw_trade.append(self.trade_time)                  # time
+            list_raw_trade.append(symbol)                           # pair
+
+            price = self.get_crypto_price(symbol)
+            list_raw_trade.append(price)                            # init price
+
+            trade_size = self.get_crypto_trade_size(price)
+            list_raw_trade.append(trade_size)                       # trade size
+
+            net_price = round(price * trade_size, 4)
+            list_raw_trade.append(net_price)                        # net price
+
+            commission = self.get_crypto_commission(net_price)
+            list_raw_trade.append(commission)                       # commission
+
+            gross_price = round((net_price + commission), 4)
+            list_raw_trade.append(gross_price)                      # gross price
+
+            list_raw_trade.append(price)                            # current unit value
+            list_raw_trade.append(round(price*trade_size, 4))       # current trade value
+
+            list_raw_trade.append(-commission)                      # profit loss
+
+            if(price != 0):
+                self.authorize_transaction(gross_price, list_raw_trade)
+
+        self.update_position_record()
 
     def buy_pair(self):
         return
@@ -60,7 +98,7 @@ class MyExchanger:
     def sell_pair(self):
         return
 
-    def sizer(self):
+    def get_trade_size(self):
         return
 
     def update_my_positions(self):
@@ -133,6 +171,53 @@ class MyExchanger:
         self.df_crypto_to_buy.drop(self.df_crypto_to_buy[self.df_crypto_to_buy.score <= config.BUYING_SCORE_THRESHOLD].index, inplace=True)
 
         self.lst_crypto_to_buy = self.df_crypto_to_buy['pair'].tolist()
+
+    def get_crypto_price(self, symbol):
+        return round(float(self.markets[symbol]['info']['price']), 4)
+
+    def get_crypto_commission(self, price):
+        return round(price * self.commission, 4)
+
+    def get_crypto_trade_size(self, price):
+        try:
+            if(price > config.TRADE_SIZE):
+                return round(config.TRADE_SIZE * 2 / price, 1)
+            else:
+                return round(config.TRADE_SIZE / price, 1)
+        except:
+            return 0
+
+    def add_buy_transaction(self, list):
+        self.df_trades.loc[len(self.df_trades)] = list
+
+    def add_records_transaction(self, list):
+        self.df_position_records.loc[len(self.df_position_records)] = list
+
+    def authorize_transaction(self, transation_gross, list):
+        if self.cash >= transation_gross:
+            self.position = True
+            self.cash = self.cash - transation_gross
+            self.add_buy_transaction(list)
+            self.open_trades = self.open_trades + 1
+            return True
+        else:
+            self.nb_trades = self.nb_trades - 1
+            return False
+
+    def update_position_record(self):
+        id = self.nb_records
+        self.nb_records = self.nb_records + 1
+        time = self.trade_time
+        cash = self.cash
+        positive_trades = self.positive_trades
+        negative_trades = self.negative_trades
+        open_trades = self.open_trades
+        total_nb_trades = self.nb_trades
+        portfolio_value = self.df_trades['current_trade_val'].sum()
+        list = [id, time, cash, positive_trades, negative_trades, open_trades, total_nb_trades, portfolio_value]
+        self.add_records_transaction(list)
+
+        print(list)
 
 
 
