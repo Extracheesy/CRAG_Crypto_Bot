@@ -83,6 +83,32 @@ def get_tradingview_recommendation(df, interval):
     df.reset_index(inplace=True, drop=True)
     return df
 
+def get_tradingview_recommendation_score(symbol, intervals):
+    score = 0
+    symbol = symbol.replace("/", "")
+    for interval in intervals:
+        recomendation = get_tradingview_recommendation_symbol(symbol, interval)
+        score = score + config.FILTER_SCORE[recomendation]
+    return score
+
+
+def get_tradingview_recommendation_symbol(symbol, interval):
+    screener = config.SCREENER_TYPE
+    exchange = config.EXCHANGE_FTX
+
+    data_handler = TA_Handler(
+        symbol=symbol,
+        screener=screener,
+        exchange=exchange,
+        interval=interval,
+    )
+    try:
+        tradingview_summary = data_handler.get_analysis().summary['RECOMMENDATION']
+    except:
+        tradingview_summary = "NO_RECOMMENDATION"
+
+    return tradingview_summary
+
 def get_crypto_score(symbol, exchange, intervals):
     buy = 0
     sell = 0

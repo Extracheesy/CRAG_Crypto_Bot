@@ -13,14 +13,15 @@ class MyExchanger:
     def __init__(self, exchange, cash, filter_buy, intervals):
         self.start_time = datetime.now()
         self.trade_time = datetime.now()
+
         self.exchanger_name = exchange
         self.exchange = screener.get_exchange()
         self.markets = self.exchange.load_markets()
         self.filter = filter_buy
         self.intervals = intervals
 
-        self.position = False
         self.cash = cash
+        self.position = False
         self.portfolio_value = 0
         self.positive_trades = 0
         self.negative_trades = 0
@@ -32,12 +33,14 @@ class MyExchanger:
         self.df_trades = pd.DataFrame(columns=config.COLUMNS_TRADES)
         self.df_position_records = pd.DataFrame(columns=config.COLUMNS_POSITION_RECORDS)
 
-        self.df_trades_records = pd.DataFrame(columns=config.COLUMNS_TRADES_RECORDS)
         self.lst_crypto_to_buy = []
         self.df_crypto_to_buy = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
+        self.buy_queued = False
+
         self.lst_crypto_to_sell = []
         self.df_crypto_to_sell = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
-        self.lst_crypto_in_portfolio = []
+        self.sell_queued = False
+
         self.multithreading = True
         self.multithreading_nb_split = 20
 
@@ -87,9 +90,15 @@ class MyExchanger:
                 self.authorize_transaction(gross_price, list_raw_trade)
 
         self.update_position_record()
+        self.clear_buy()
 
     def buy_pair(self):
         return
+
+    def clear_buy(self):
+        self.df_crypto_to_buy = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
+        self.lst_crypto_to_buy = []
+        self.buy_queued = False
 
     def sell_list_of_pairs(self):
         self.trade_time = datetime.now()
@@ -103,13 +112,10 @@ class MyExchanger:
         return
 
     def update_my_positions(self):
-        self.update_get_profit_stop_lost()
-        self.update_low_ranking()
+        self.update_sell_list()
 
-    def update_get_profit_stop_lost(self):
-        self.exchange = screener.get_exchange()
-        self.markets = self.exchange.load_markets()
-
+    def update_sell_list(self):
+        # build sell list from positions / trades
         list_ids = self.df_trades['id'].to_list()
         self.df_trades = self.df_trades.set_index('id', drop=False)
         for id in list_ids:
@@ -127,8 +133,19 @@ class MyExchanger:
                 if roi / gross_price * 100 <= config.STOP_LOSS:
                     self.lst_crypto_to_sell.append(symbol)
 
-    def update_low_ranking(self):
-        return
+            score = self.update_low_ranking(symbol)
+            if score < 0:
+                self.lst_crypto_to_sell.append(symbol)
+        if(len(self.lst_crypto_to_sell) == 0):
+            self.sell_queued = False
+        else:
+            self.sell_queued = True
+            self.lst_crypto_to_sell = list(set(self.lst_crypto_to_sell))
+
+
+    def update_low_ranking(self, symbol):
+        score = screener.get_tradingview_recommendation_score(symbol, self.intervals)
+        return score
 
     def get_tradingview_recommendation_list_multi(self, list_crypto_symbols):
         list_tradingview = screener.get_tradingview_recommendation_list(list_crypto_symbols, self.filter)
@@ -174,6 +191,10 @@ class MyExchanger:
         print('duration: ', duration_time)
 
         self.lst_crypto_to_buy = list_reinforced
+        if len(self.lst_crypto_to_buy) > 0:
+            self.buy_queued = True
+        else:
+            self.buy_queued = False
 
     def rank_list_of_crypto_to_buy(self):
         self.df_crypto_to_buy['pair'] = self.lst_crypto_to_buy
@@ -196,6 +217,8 @@ class MyExchanger:
         self.lst_crypto_to_buy = self.df_crypto_to_buy['pair'].tolist()
 
     def get_crypto_price(self, symbol):
+        self.exchange = screener.get_exchange()
+        self.markets = self.exchange.load_markets()
         return round(float(self.markets[symbol]['info']['price']), 4)
 
     def get_crypto_commission(self, price):
