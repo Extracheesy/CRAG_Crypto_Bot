@@ -100,16 +100,29 @@ class MyExchanger:
         self.lst_crypto_to_buy = []
         self.buy_queued = False
 
+    def clear_sell(self):
+        self.lst_crypto_to_sell = []
+        self.buy_queued = False
+
     def sell_list_of_pairs(self):
-        self.trade_time = datetime.now()
-        for symbol in self.lst_crypto_to_buy:
-            list_raw_trade = []
+        if self.sell_queued:
+            self.trade_time = datetime.now()
+            list_ids = self.df_trades['id'].to_list()
+            self.df_trades = self.df_trades.set_index('id', drop=False)
+            for id in list_ids:
+                symbol = self.df_trades.loc[id, 'pair']
+                if symbol in self.lst_crypto_to_sell:
+                    self.update_position_sell_record(id, symbol)
+                    self.lst_crypto_to_sell.remove(symbol)
+
+            self.df_trades.reset_index(inplace=True, drop=True)
+            self.sell_queued = False
 
     def sell_pair(self):
         return
 
-    def get_trade_size(self):
-        return
+    def remove_trade_after_sell(self, id):
+        self.df_trades.drop([id], axis=0, inplace=True)
 
     def update_my_positions(self):
         self.update_sell_list()
@@ -137,10 +150,13 @@ class MyExchanger:
             if score < 0:
                 self.lst_crypto_to_sell.append(symbol)
         if(len(self.lst_crypto_to_sell) == 0):
-            self.sell_queued = False
+            self.clear_sell()
         else:
             self.sell_queued = True
             self.lst_crypto_to_sell = list(set(self.lst_crypto_to_sell))
+
+        self.df_trades.reset_index(inplace=True, drop=True)
+
 
 
     def update_low_ranking(self, symbol):
@@ -263,9 +279,39 @@ class MyExchanger:
         list = [id, time, cash, positive_trades, negative_trades, open_trades, total_nb_trades, portfolio_value]
         self.add_records_transaction(list)
 
-        print(list)
+        print("BUY STATUS: ", list)
 
+    def update_position_sell_record(self, id_trade, symbol):
+        id = self.nb_records
+        self.nb_records = self.nb_records + 1
+        time = self.trade_time
 
+        actual_price = self.get_crypto_price(symbol)
+        sell_price = actual_price * self.df_trades['trade_size']
+
+        cash = self.cash + sell_price
+
+        if sell_price > self.df_trades['gross_price']:
+            self.positive_trades = self.positive_trades + 1
+        else:
+            self.negative_trades = self.negative_trades + 1
+
+        positive_trades = self.positive_trades
+        negative_trades = self.negative_trades
+
+        self.open_trades = self.open_trades - 1
+        open_trades = self.open_trades
+
+        total_nb_trades = self.nb_trades
+
+        self.remove_trade_after_sell(id)
+
+        portfolio_value = self.df_trades['current_trade_val'].sum()
+
+        list = [id, time, cash, positive_trades, negative_trades, open_trades, total_nb_trades, portfolio_value]
+        self.add_records_transaction(list)
+
+        print("SELL STATUS: ", list)
 
 
 

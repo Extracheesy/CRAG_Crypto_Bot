@@ -4,7 +4,6 @@ import pandas as pd
 def merge_csv_to_df(path, pattern):
     current_dir = os.getcwd()
     os.chdir(path)
-    current_dir = os.getcwd()
     listOfFilesToRemove = os.listdir('./')
     #pattern = "*.csv"
     li = []
