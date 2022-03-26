@@ -309,7 +309,7 @@ class MyExchanger:
         roi = global_value * 100 / self.init_cash
         list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi, 2)]
         self.add_records_transaction(list)
-        self.add_recods_trade()
+        self.dump_logs()
         print("BUY STATUS: ", list)
 
     def update_position_sell_record(self, id_trade, symbol):
@@ -339,33 +339,38 @@ class MyExchanger:
         roi = global_value * 100 / self.init_cash
         list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi, 2)]
         self.add_records_transaction(list)
+        self.dump_logs()
         print("SELL STATUS: ", list)
 
     def update_position_current_price(self):
+        add_new_row = True
         for i in self.df_trades.index.tolist():
             self.df_trades['current_u_value'][i] = self.get_crypto_price(self.df_trades['pair'][i])
             self.df_trades['current_trade_val'][i] = self.df_trades['current_u_value'][i] * self.df_trades['trade_size'][i]
 
-            new_row_data = [self.nb_records, self.trade_time]
-            nb_columns = len(self.df_trade_records.columns)
+            if add_new_row:
+                new_row_data = [self.nb_records, self.trade_time]
+                nb_columns = len(self.df_trade_records.columns)
 
-            if len(self.df_trade_records.columns) == 2:
-                row_empty_data = []
-            else:
-                row_empty_data = [''] * (nb_columns - 2)
-            new_row_data = new_row_data + row_empty_data
-            self.add_records_trade(new_row_data)
+                if len(self.df_trade_records.columns) == 2:
+                    row_empty_data = []
+                else:
+                    row_empty_data = [''] * (nb_columns - 2)
+                new_row_data = new_row_data + row_empty_data
+                self.add_records_trade(new_row_data)
+                add_new_row = False
 
             symbol = self.df_trades['pair'][i]
             if symbol in self.df_trade_records.columns:
-                self.df_trade_records.loc[len(self.df_trade_records), symbol] = self.df_trades['current_trade_val'][i]
+                self.df_trade_records.loc[(len(self.df_trade_records)-1), symbol] = round(self.df_trades['current_trade_val'][i], 4)
             else:
                 self.df_trade_records.insert(len(self.df_trade_records.columns), symbol, '')
-                self.df_trade_records.loc[len(self.df_trade_records), symbol] = self.df_trades['current_trade_val'][i]
+                self.df_trade_records.loc[(len(self.df_trade_records)-1), symbol] = round(self.df_trades['current_trade_val'][i], 4)
 
     def dump_logs(self):
         if self.nb_records % 5 == 0:
-            self.df_position_records.to_csv('./LOG/positions_log.cvs')
-            self.df_trade_records.to_csv('./LOG/trades_log.cvs')
+            self.df_position_records.to_csv('./LOG/positions_log.csv')
+            self.df_trade_records.to_csv('./LOG/trades_log.csv')
+            self.df_trades.to_csv('./LOG/active_trades_log.csv')
 
 
