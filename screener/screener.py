@@ -273,7 +273,16 @@ def get_df_selected_data_from_fdp():
 
     request = urllib.request.Request('https://fdp-ifxcxetwza-uc.a.run.app/portfolio')
     request.add_header("User-Agent", "cheese")
-    data = urllib.request.urlopen(request).read()
+
+    TIMEOUT_ERROR = True
+    while TIMEOUT_ERROR:
+        try:
+            data = urllib.request.urlopen(request).read()
+            TIMEOUT_ERROR = False
+        except:
+            print('timeout error')
+            TIMEOUT_ERROR = True
+
     data_json = json.loads(data)
 
     df_portfolio = pd.read_json(data_json["result"]["symbols"])
