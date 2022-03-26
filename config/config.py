@@ -58,7 +58,7 @@ COLUMNS_TRADES_RECORDS = ['id', 'time', 'cash', 'positive_trades', 'negative_tra
 
 COLUMNS_BUY_SELL = ['pair', 'ranking','score', '24h', '1h', 'buy', 'sell', 'neutral']
 
-COLUMNS_POSITION_RECORDS = ['id', 'time', 'cash', 'positive_trades', 'negative_trades', 'open_trades', 'total_nb_trades', 'portfolio_value']
+COLUMNS_POSITION_RECORDS = ['id', 'time', 'type', 'cash', 'positive_trades', 'negative_trades', 'open_trades', 'total_nb_trades', 'portfolio_value', 'global_value']
 
 MULTITHREADING_POOL = "./POOL/"
 

@@ -239,9 +239,9 @@ def get_market_price_changes(list_crypto_symbols, markets):
 
     list_top_gainer = df_symbol['symbol'].to_list()
 
-    print("price top gainers: ")
-    print("nb symbols:", len(list_top_gainer))
-    print(list_top_gainer)
+    #print("price top gainers: ")
+    #print("nb symbols:", len(list_top_gainer))
+    #print(list_top_gainer)
 
     return list_top_gainer
 

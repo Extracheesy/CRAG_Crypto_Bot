@@ -110,13 +110,20 @@ class MyExchanger:
             list_ids = self.df_trades['id'].to_list()
             self.df_trades = self.df_trades.set_index('id', drop=False)
             for id in list_ids:
-                symbol = self.df_trades.loc[id, 'pair']
+                try:
+                    symbol = self.df_trades.loc[id, 'pair']
+                except:
+                    print('id: ', id)
+                    self.df_trades.to_csv('DEBUG.csv')
+                    symbol = self.df_trades.loc['pair'][id]
+
                 if symbol in self.lst_crypto_to_sell:
+                    print('selling id: ', id)
+                    print('selling symbol: ', symbol)
                     self.update_position_sell_record(id, symbol)
-                    self.lst_crypto_to_sell.remove(symbol)
 
             self.df_trades.reset_index(inplace=True, drop=True)
-            self.sell_queued = False
+            self.clear_sell()
 
     def sell_pair(self):
         return
@@ -158,7 +165,6 @@ class MyExchanger:
         self.df_trades.reset_index(inplace=True, drop=True)
 
 
-
     def update_low_ranking(self, symbol):
         score = screener.get_tradingview_recommendation_score(symbol, self.intervals)
         return score
@@ -174,16 +180,16 @@ class MyExchanger:
 
         symbols = self.exchange.symbols
 
-        print("list symbols available: ", len(symbols))
+        # print("list symbols available: ", len(symbols))
         symbols_total_size = len(symbols)
 
         symbols = list(filter(screener.custom_filter, symbols))
-        print("symbol filtered: ", symbols_total_size - len(symbols))
+        # print("symbol filtered: ", symbols_total_size - len(symbols))
 
         list_crypto_symbols = screener.filter_symbol_by_volume(symbols, self.markets)
 
-        print("low volume symbol dropped: ", len(symbols) - len(list_crypto_symbols))
-        print("symbol remaining: ", len(list_crypto_symbols))
+        # print("low volume symbol dropped: ", len(symbols) - len(list_crypto_symbols))
+        # print("symbol remaining: ", len(list_crypto_symbols))
 
         list_price = screener.get_market_price_changes(list_crypto_symbols, self.markets)
 
@@ -199,12 +205,12 @@ class MyExchanger:
             list_tradingview = screener.get_tradingview_recommendation_list(list_crypto_symbols, self.filter)
 
         list_reinforced = screener.get_price_and_tradingview_common(list_price, list_tradingview)
-        print("common symbol: ", len(list_reinforced))
-        print(list_reinforced)
+        # print("common symbol: ", len(list_reinforced))
+        # print(list_reinforced)
 
         end_time = datetime.now()
         duration_time = end_time - start_time
-        print('duration: ', duration_time)
+        #print('duration: ', duration_time)
 
         self.lst_crypto_to_buy = list_reinforced
         if len(self.lst_crypto_to_buy) > 0:
@@ -267,7 +273,10 @@ class MyExchanger:
             return False
 
     def update_position_record(self):
+        self.update_position_current_price()
+
         id = self.nb_records
+        transaction = "BUY"
         self.nb_records = self.nb_records + 1
         time = self.trade_time
         cash = self.cash
@@ -276,43 +285,41 @@ class MyExchanger:
         open_trades = self.open_trades
         total_nb_trades = self.nb_trades
         portfolio_value = self.df_trades['current_trade_val'].sum()
-        list = [id, time, cash, positive_trades, negative_trades, open_trades, total_nb_trades, portfolio_value]
+        global_value = portfolio_value + cash
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1)]
         self.add_records_transaction(list)
-
         print("BUY STATUS: ", list)
 
     def update_position_sell_record(self, id_trade, symbol):
+        self.update_position_current_price()
+
         id = self.nb_records
         self.nb_records = self.nb_records + 1
         time = self.trade_time
-
+        transaction = "SELL"
         actual_price = self.get_crypto_price(symbol)
-        sell_price = actual_price * self.df_trades['trade_size']
-
-        cash = self.cash + sell_price
-
-        if sell_price > self.df_trades['gross_price']:
+        sell_price = actual_price * self.df_trades['trade_size'][id_trade]
+        self.cash = self.cash + sell_price
+        cash = self.cash
+        initial_gross = self.df_trades['gross_price'][id_trade]
+        if (sell_price > initial_gross):
             self.positive_trades = self.positive_trades + 1
         else:
             self.negative_trades = self.negative_trades + 1
-
         positive_trades = self.positive_trades
         negative_trades = self.negative_trades
-
         self.open_trades = self.open_trades - 1
         open_trades = self.open_trades
-
         total_nb_trades = self.nb_trades
-
         self.remove_trade_after_sell(id)
-
         portfolio_value = self.df_trades['current_trade_val'].sum()
-
-        list = [id, time, cash, positive_trades, negative_trades, open_trades, total_nb_trades, portfolio_value]
+        global_value = portfolio_value + cash
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1)]
         self.add_records_transaction(list)
-
         print("SELL STATUS: ", list)
 
-
-
+    def update_position_current_price(self):
+        for i in self.df_trades.index.tolist():
+            self.df_trades['current_u_value'][i] = self.get_crypto_price(self.df_trades['pair'][i])
+            self.df_trades['current_trade_val'][i] = self.df_trades['current_u_value'][i] * self.df_trades['trade_size'][i]
 
