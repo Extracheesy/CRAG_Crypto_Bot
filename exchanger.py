@@ -22,6 +22,7 @@ class MyExchanger:
         self.intervals = intervals
 
         self.cash = cash
+        self.init_cash = cash
         self.position = False
         self.portfolio_value = 0
         self.positive_trades = 0
@@ -32,14 +33,15 @@ class MyExchanger:
 
         self.commission = self.markets[config.INIT_SYMBOL]['taker']
         self.df_trades = pd.DataFrame(columns=config.COLUMNS_TRADES)
+
         self.df_position_records = pd.DataFrame(columns=config.COLUMNS_POSITION_RECORDS)
+        self.df_trade_records = pd.DataFrame(columns=config.COLUMNS_TRADES_RECORDS)
 
         self.lst_crypto_to_buy = []
         self.df_crypto_to_buy = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
         self.buy_queued = False
 
         self.lst_crypto_to_sell = []
-        self.df_crypto_to_sell = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
         self.sell_queued = False
 
         self.multithreading = True
@@ -241,6 +243,7 @@ class MyExchanger:
 
     def get_crypto_price(self, symbol):
         try:
+            time.sleep(self.exchange.rateLimit / 1000)
             self.exchange = screener.get_exchange()
             self.markets = self.exchange.load_markets()
         except:
@@ -275,6 +278,9 @@ class MyExchanger:
     def add_records_transaction(self, list):
         self.df_position_records.loc[len(self.df_position_records)] = list
 
+    def add_records_trade(self, list):
+        self.df_trade_records.loc[len(self.df_trade_records)] = list
+
     def authorize_transaction(self, transation_gross, list):
         if self.cash >= transation_gross:
             self.position = True
@@ -300,8 +306,10 @@ class MyExchanger:
         total_nb_trades = self.nb_trades
         portfolio_value = self.df_trades['current_trade_val'].sum()
         global_value = portfolio_value + cash
-        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1)]
+        roi = global_value * 100 / self.init_cash
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi, 2)]
         self.add_records_transaction(list)
+        self.add_recods_trade()
         print("BUY STATUS: ", list)
 
     def update_position_sell_record(self, id_trade, symbol):
@@ -328,7 +336,8 @@ class MyExchanger:
         self.remove_trade_after_sell(id_trade)
         portfolio_value = self.df_trades['current_trade_val'].sum()
         global_value = portfolio_value + cash
-        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1)]
+        roi = global_value * 100 / self.init_cash
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi, 2)]
         self.add_records_transaction(list)
         print("SELL STATUS: ", list)
 
@@ -336,4 +345,27 @@ class MyExchanger:
         for i in self.df_trades.index.tolist():
             self.df_trades['current_u_value'][i] = self.get_crypto_price(self.df_trades['pair'][i])
             self.df_trades['current_trade_val'][i] = self.df_trades['current_u_value'][i] * self.df_trades['trade_size'][i]
+
+            new_row_data = [self.nb_records, self.trade_time]
+            nb_columns = len(self.df_trade_records.columns)
+
+            if len(self.df_trade_records.columns) == 2:
+                row_empty_data = []
+            else:
+                row_empty_data = [''] * (nb_columns - 2)
+            new_row_data = new_row_data + row_empty_data
+            self.add_records_trade(new_row_data)
+
+            symbol = self.df_trades['pair'][i]
+            if symbol in self.df_trade_records.columns:
+                self.df_trade_records.loc[len(self.df_trade_records), symbol] = self.df_trades['current_trade_val'][i]
+            else:
+                self.df_trade_records.insert(len(self.df_trade_records.columns), symbol, '')
+                self.df_trade_records.loc[len(self.df_trade_records), symbol] = self.df_trades['current_trade_val'][i]
+
+    def dump_logs(self):
+        if self.nb_records % 5 == 0:
+            self.df_position_records.to_csv('./LOG/positions_log.cvs')
+            self.df_trade_records.to_csv('./LOG/trades_log.cvs')
+
 

@@ -55,10 +55,9 @@ datapath = '.\datas\orcl-1995-2014.txt'
 
 COLUMNS_TRADES = ['id', 'time', 'pair', 'init_price', 'trade_size', 'net_price', 'commission', 'gross_price', 'current_u_value', 'current_trade_val', 'profit_loss']
 COLUMNS_TRADES_RECORDS = ['id', 'time', 'cash', 'positive_trades', 'negative_trades', 'open_trades', 'total_nb_trades', 'portfolio_value']
-
 COLUMNS_BUY_SELL = ['pair', 'ranking','score', '24h', '1h', 'buy', 'sell', 'neutral']
-
-COLUMNS_POSITION_RECORDS = ['id', 'time', 'type', 'cash', 'positive_trades', 'negative_trades', 'open_trades', 'total_nb_trades', 'portfolio_value', 'global_value']
+COLUMNS_POSITION_RECORDS = ['id', 'time', 'type', 'cash', 'positive_trades', 'negative_trades', 'open_trades', 'total_nb_trades', 'portfolio_value', 'global_value', 'roi']
+COLUMNS_TRADES_RECORDS = ['id', 'time']
 
 MULTITHREADING_POOL = "./POOL/"
 
