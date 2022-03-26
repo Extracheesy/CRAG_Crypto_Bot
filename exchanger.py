@@ -44,8 +44,9 @@ class MyExchanger:
         self.lst_crypto_to_sell = []
         self.sell_queued = False
 
-        self.multithreading = True
+        self.multithreading = False
         self.multithreading_nb_split = 20
+        self.fdp = True
 
     def next_step(self):
         if self.position == False:
@@ -181,39 +182,29 @@ class MyExchanger:
     def update_lst_crypto_for_buying(self):
         start_time = datetime.now()
 
-        symbols = self.exchange.symbols
-
-        # print("list symbols available: ", len(symbols))
-        symbols_total_size = len(symbols)
-
-        symbols = list(filter(screener.custom_filter, symbols))
-        # print("symbol filtered: ", symbols_total_size - len(symbols))
-
-        list_crypto_symbols = screener.filter_symbol_by_volume(symbols, self.markets)
-
-        # print("low volume symbol dropped: ", len(symbols) - len(list_crypto_symbols))
-        # print("symbol remaining: ", len(list_crypto_symbols))
-
-        list_price = screener.get_market_price_changes(list_crypto_symbols, self.markets)
-
-        if self.multithreading:
-            global_split_list = tools.split_list_into_list(list_crypto_symbols, self.multithreading_nb_split)
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(global_split_list)) as executor:
-                executor.map(self.get_tradingview_recommendation_list_multi, global_split_list)
-
-            df_tradingview = merge.merge_csv_to_df(config.MULTITHREADING_POOL, "*_result.csv")
-            list_tradingview = df_tradingview['symbol'].tolist()
+        if self.fdp:
+            df_crypto_symbols = screener.get_df_selected_data_from_fdp()
+            df_crypto_symbols = screener.filter_df_level(df_crypto_symbols, self.filter, config.RECOMMENDATION_ALL.copy())
+            list_reinforced = df_crypto_symbols['symbol'].to_list()
         else:
-            list_tradingview = screener.get_tradingview_recommendation_list(list_crypto_symbols, self.filter)
+            symbols = self.exchange.symbols
+            symbols = list(filter(screener.custom_filter, symbols))
+            list_crypto_symbols = screener.filter_symbol_by_volume(symbols, self.markets)
+            list_price = screener.get_market_price_changes(list_crypto_symbols, self.markets)
+            if self.multithreading:
+                global_split_list = tools.split_list_into_list(list_crypto_symbols, self.multithreading_nb_split)
 
-        list_reinforced = screener.get_price_and_tradingview_common(list_price, list_tradingview)
-        # print("common symbol: ", len(list_reinforced))
-        # print(list_reinforced)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=len(global_split_list)) as executor:
+                    executor.map(self.get_tradingview_recommendation_list_multi, global_split_list)
 
+                df_tradingview = merge.merge_csv_to_df(config.MULTITHREADING_POOL, "*_result.csv")
+                list_tradingview = df_tradingview['symbol'].tolist()
+            else:
+                list_tradingview = screener.get_tradingview_recommendation_list(list_crypto_symbols, self.filter)
+            list_reinforced = screener.get_price_and_tradingview_common(list_price, list_tradingview)
         end_time = datetime.now()
         duration_time = end_time - start_time
-        #print('duration: ', duration_time)
+        # print('duration: ', duration_time)
 
         self.lst_crypto_to_buy = list_reinforced
         if len(self.lst_crypto_to_buy) > 0:

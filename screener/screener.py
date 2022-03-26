@@ -4,6 +4,11 @@ pd.options.display.float_format = '{:.6f}'.format
 import ccxt
 
 import config
+
+import pandas as pd
+import urllib
+import json
+
 from datetime import datetime
 import matplotlib.pyplot as plt
 import ta
@@ -264,7 +269,16 @@ def get_price_and_tradingview_common(lst1, lst2):
     return lst
 
 
+def get_df_selected_data_from_fdp():
 
+    request = urllib.request.Request('https://fdp-ifxcxetwza-uc.a.run.app/portfolio')
+    request.add_header("User-Agent", "cheese")
+    data = urllib.request.urlopen(request).read()
+    data_json = json.loads(data)
+
+    df_portfolio = pd.read_json(data_json["result"]["symbols"])
+
+    return df_portfolio
 
 
 
