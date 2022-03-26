@@ -12,7 +12,7 @@ if __name__ == '__main__':
     Crag = MyExchanger('ftx', 10000, config.FILTER_STRONG_BUY, config.INTERVAL)
     while True:
         Crag.next_step()
-        time.sleep(180)
+        # time.sleep(180)
 
     print_hi('PyCharm')
 

@@ -149,12 +149,12 @@ class MyExchanger:
             trade_size = self.df_trades['trade_size'][id]
             actual_price = self.get_crypto_price(symbol)
             new_value = trade_size * actual_price
-            roi = new_value - gross_price
+            roi = float(new_value - gross_price)
             if roi >= 0:
-                if roi / gross_price * 100 >= config.GET_PROFIT:
+                if float(roi) / float(gross_price) * float(100) >= float(config.GET_PROFIT):
                     self.lst_crypto_to_sell.append(symbol)
             else:
-                if roi / gross_price * 100 <= config.STOP_LOSS:
+                if float(roi) / float(gross_price) * float(100) <= float(config.STOP_LOSS):
                     self.lst_crypto_to_sell.append(symbol)
 
             score = self.update_low_ranking(symbol)
@@ -298,7 +298,7 @@ class MyExchanger:
         portfolio_value = self.df_trades['current_trade_val'].sum()
         global_value = portfolio_value + cash
         roi = global_value * 100 / self.init_cash
-        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi, 2)]
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi - 100.0, 4)]
         self.add_records_transaction(list)
         self.dump_logs()
         print("BUY STATUS: ", list)
@@ -328,7 +328,7 @@ class MyExchanger:
         portfolio_value = self.df_trades['current_trade_val'].sum()
         global_value = portfolio_value + cash
         roi = global_value * 100 / self.init_cash
-        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi, 2)]
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi - 100.0, 4)]
         self.add_records_transaction(list)
         self.dump_logs()
         print("SELL STATUS: ", list)
