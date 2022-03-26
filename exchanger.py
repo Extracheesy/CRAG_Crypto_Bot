@@ -2,6 +2,7 @@ from datetime import datetime
 import pandas as pd
 import uuid
 import ccxt
+import time
 import config
 import screener
 import tools
@@ -113,13 +114,13 @@ class MyExchanger:
                 try:
                     symbol = self.df_trades.loc[id, 'pair']
                 except:
-                    print('id: ', id)
-                    self.df_trades.to_csv('DEBUG.csv')
+                    # print('id: ', id)
+                    # self.df_trades.to_csv('DEBUG.csv')
                     symbol = self.df_trades.loc['pair'][id]
 
                 if symbol in self.lst_crypto_to_sell:
-                    print('selling id: ', id)
-                    print('selling symbol: ', symbol)
+                    # print('selling id: ', id)
+                    # print('selling symbol: ', symbol)
                     self.update_position_sell_record(id, symbol)
 
             self.df_trades.reset_index(inplace=True, drop=True)
@@ -239,8 +240,21 @@ class MyExchanger:
         self.lst_crypto_to_buy = self.df_crypto_to_buy['pair'].tolist()
 
     def get_crypto_price(self, symbol):
-        self.exchange = screener.get_exchange()
-        self.markets = self.exchange.load_markets()
+        try:
+            self.exchange = screener.get_exchange()
+            self.markets = self.exchange.load_markets()
+        except:
+            SUCCESS = False
+            while SUCCESS == False:
+                time.sleep(5)
+                print("CCXT TIMEOUT")
+                try:
+                    self.exchange = screener.get_exchange()
+                    self.markets = self.exchange.load_markets()
+                    SUCCESS = True
+                except:
+                    SUCCESS = False
+
         return round(float(self.markets[symbol]['info']['price']), 4)
 
     def get_crypto_commission(self, price):
@@ -311,7 +325,7 @@ class MyExchanger:
         self.open_trades = self.open_trades - 1
         open_trades = self.open_trades
         total_nb_trades = self.nb_trades
-        self.remove_trade_after_sell(id)
+        self.remove_trade_after_sell(id_trade)
         portfolio_value = self.df_trades['current_trade_val'].sum()
         global_value = portfolio_value + cash
         list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1)]
