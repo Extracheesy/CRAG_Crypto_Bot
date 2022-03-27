@@ -12,6 +12,7 @@ import concurrent.futures
 class MyExchanger:
 
     def __init__(self, exchange, cash, filter_buy, intervals):
+        print('Strategy based on:', filter_buy)
         self.start_time = datetime.now()
         self.trade_time = datetime.now()
 
@@ -150,12 +151,15 @@ class MyExchanger:
             actual_price = self.get_crypto_price(symbol)
             new_value = trade_size * actual_price
             roi = float(new_value - gross_price)
-            if roi >= 0:
-                if float(roi) / float(gross_price) * float(100) >= float(config.GET_PROFIT):
-                    self.lst_crypto_to_sell.append(symbol)
+            if(gross_price != 0):
+                if roi >= 0:
+                    if float(roi) / float(gross_price) * float(100) >= float(config.GET_PROFIT):
+                        self.lst_crypto_to_sell.append(symbol)
+                else:
+                    if float(roi) / float(gross_price) * float(100) <= float(config.STOP_LOSS):
+                        self.lst_crypto_to_sell.append(symbol)
             else:
-                if float(roi) / float(gross_price) * float(100) <= float(config.STOP_LOSS):
-                    self.lst_crypto_to_sell.append(symbol)
+                print('ERROR GROSS_PRICE == 0!!!',symbol, gross_price)
 
             score = self.update_low_ranking(symbol)
             if score < 0:
