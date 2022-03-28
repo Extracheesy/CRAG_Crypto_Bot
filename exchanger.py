@@ -184,7 +184,7 @@ class MyExchanger:
         df.to_csv(filename)
 
     def update_lst_crypto_for_buying(self):
-        start_time = datetime.now()
+        # start_time = datetime.now()
 
         if self.fdp:
             df_crypto_symbols = screener.get_df_selected_data_from_fdp()
@@ -206,8 +206,8 @@ class MyExchanger:
             else:
                 list_tradingview = screener.get_tradingview_recommendation_list(list_crypto_symbols, self.filter)
             list_reinforced = screener.get_price_and_tradingview_common(list_price, list_tradingview)
-        end_time = datetime.now()
-        duration_time = end_time - start_time
+        # end_time = datetime.now()
+        # duration_time = end_time - start_time
         # print('duration: ', duration_time)
 
         self.lst_crypto_to_buy = list_reinforced
@@ -261,9 +261,9 @@ class MyExchanger:
     def get_crypto_trade_size(self, price):
         try:
             if(price > config.TRADE_SIZE):
-                return round(config.TRADE_SIZE * 2 / price, 1)
+                return round(config.TRADE_SIZE / price, 5)
             else:
-                return round(config.TRADE_SIZE / price, 1)
+                return round(config.TRADE_SIZE / price, 4)
         except:
             return 0
 
