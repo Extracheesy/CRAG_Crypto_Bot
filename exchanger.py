@@ -64,41 +64,24 @@ class MyExchanger:
     def buy_list_of_pairs(self):
         self.trade_time = datetime.now()
         for symbol in self.lst_crypto_to_buy:
-            list_raw_trade = []
-
-            list_raw_trade.append(self.nb_trades)                   # id
+            id = self.nb_trades
             self.nb_trades = self.nb_trades+1
-            list_raw_trade.append(self.trade_time)                  # time
-            list_raw_trade.append(symbol)                           # pair
-
+            time = self.trade_time
             price = self.get_crypto_price(symbol)
-            list_raw_trade.append(price)                            # init price
-
             trade_size = self.get_crypto_trade_size(price)
-            list_raw_trade.append(trade_size)                       # trade size
-
             net_price = round(price * trade_size, 4)
-            list_raw_trade.append(net_price)                        # net price
-
             commission = self.get_crypto_commission(net_price)
-            list_raw_trade.append(commission)                       # commission
-
             gross_price = round((net_price + commission), 4)
-            list_raw_trade.append(gross_price)                      # gross price
-
-            list_raw_trade.append(price)                            # current unit value
-            list_raw_trade.append(round(price*trade_size, 4))       # current trade value
-
-            list_raw_trade.append(-commission)                      # profit loss
-
+            current_price = price
+            current_trade_value = round(price*trade_size, 4)
+            profit_loss = -commission
+            list_raw_trade = [id, time, symbol, price, trade_size, net_price, commission, gross_price, current_price,
+                              current_trade_value, profit_loss]
             if(price != 0):
                 self.authorize_transaction(gross_price, list_raw_trade)
 
         self.update_position_record()
         self.clear_buy()
-
-    def buy_pair(self):
-        return
 
     def clear_buy(self):
         self.df_crypto_to_buy = pd.DataFrame(columns=config.COLUMNS_BUY_SELL)
@@ -129,9 +112,6 @@ class MyExchanger:
 
             self.df_trades.reset_index(inplace=True, drop=True)
             self.clear_sell()
-
-    def sell_pair(self):
-        return
 
     def remove_trade_after_sell(self, id):
         self.df_trades.drop([id], axis=0, inplace=True)
@@ -184,8 +164,6 @@ class MyExchanger:
         df.to_csv(filename)
 
     def update_lst_crypto_for_buying(self):
-        # start_time = datetime.now()
-
         if self.fdp:
             df_crypto_symbols = screener.get_df_selected_data_from_fdp()
             df_crypto_symbols = screener.filter_df_level(df_crypto_symbols, self.filter, config.RECOMMENDATION_ALL.copy())
@@ -206,9 +184,6 @@ class MyExchanger:
             else:
                 list_tradingview = screener.get_tradingview_recommendation_list(list_crypto_symbols, self.filter)
             list_reinforced = screener.get_price_and_tradingview_common(list_price, list_tradingview)
-        # end_time = datetime.now()
-        # duration_time = end_time - start_time
-        # print('duration: ', duration_time)
 
         self.lst_crypto_to_buy = list_reinforced
         if len(self.lst_crypto_to_buy) > 0:
@@ -232,6 +207,7 @@ class MyExchanger:
         self.df_crypto_to_buy.reset_index(inplace=True, drop=True)
 
         # Get rid of lower score
+        # Select the best pairs based on score and BUYING_SCORE_THRESHOLD
         self.df_crypto_to_buy.drop(self.df_crypto_to_buy[self.df_crypto_to_buy.score <= config.BUYING_SCORE_THRESHOLD].index, inplace=True)
 
         self.lst_crypto_to_buy = self.df_crypto_to_buy['pair'].tolist()
@@ -302,7 +278,8 @@ class MyExchanger:
         portfolio_value = self.df_trades['current_trade_val'].sum()
         global_value = portfolio_value + cash
         roi = global_value * 100 / self.init_cash
-        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi - 100.0, 4)]
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades,
+                round(portfolio_value,1), round(global_value,1), round(roi - 100.0, 4)]
         self.add_records_transaction(list)
         self.dump_logs()
         print("BUY STATUS: ", list)
@@ -332,7 +309,8 @@ class MyExchanger:
         portfolio_value = self.df_trades['current_trade_val'].sum()
         global_value = portfolio_value + cash
         roi = global_value * 100 / self.init_cash
-        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades, round(portfolio_value,1), round(global_value,1), round(roi - 100.0, 4)]
+        list = [id, time, transaction, round(cash,1), positive_trades, negative_trades, open_trades, total_nb_trades,
+                round(portfolio_value,1), round(global_value,1), round(roi - 100.0, 4)]
         self.add_records_transaction(list)
         self.dump_logs()
         print("SELL STATUS: ", list)
