@@ -335,10 +335,16 @@ class MyExchanger:
 
             symbol = self.df_trades['pair'][i]
             if symbol in self.df_trade_records.columns:
-                self.df_trade_records.loc[(len(self.df_trade_records)-1), symbol] = round(self.df_trades['current_trade_val'][i], 4)
+                if config.LOG_PRICE_RAW == True:
+                    self.df_trade_records.loc[(len(self.df_trade_records)-1), symbol] = round(self.df_trades['current_trade_val'][i], 4)
+                else:
+                    self.df_trade_records.loc[(len(self.df_trade_records) - 1), symbol] = round((self.df_trades['current_u_value'][i] - self.df_trades['init_price'][i]) / self.df_trades['init_price'][i] * 100, 4)
             else:
                 self.df_trade_records.insert(len(self.df_trade_records.columns), symbol, '')
-                self.df_trade_records.loc[(len(self.df_trade_records)-1), symbol] = round(self.df_trades['current_trade_val'][i], 4)
+                if config.LOG_PRICE_RAW == True:
+                    self.df_trade_records.loc[(len(self.df_trade_records)-1), symbol] = round(self.df_trades['current_trade_val'][i], 4)
+                else:
+                    self.df_trade_records.loc[(len(self.df_trade_records) - 1), symbol] = round((self.df_trades['current_u_value'][i] - self.df_trades['init_price'][i]) / self.df_trades['init_price'][i] * 100, 4)
 
     def dump_logs(self):
         if self.nb_records % 5 == 0:
